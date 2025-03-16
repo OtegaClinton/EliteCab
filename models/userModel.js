@@ -34,6 +34,11 @@ const UserSchema = new mongoose.Schema(
       required: true 
     },
 
+    isAdmin: { 
+      type: Boolean, 
+      default: false 
+    },
+
     rides: [{ 
       type: mongoose.Schema.Types.ObjectId, 
       ref: "Ride" 
