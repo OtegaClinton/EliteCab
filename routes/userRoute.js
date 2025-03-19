@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const {authenticator} = require("../middlewares/authentication");
 const {authorization} = require("../middlewares/authorization");
+const uploader = require("../helpers/multer");
 const { 
     signUp,
     verifyEmail,
@@ -11,9 +12,9 @@ const {
     getAllUsers,
     updateUser,
     deleteUser,
-    makeAdmin
-
-    
+    makeAdmin,
+    updateProfilePicture
+   
  } = require("../controllers/userController");
 
  const { 
@@ -41,13 +42,17 @@ router.get("/users/:id", authenticator, getUserById);
 router.get("/users", authenticator, authorization, getAllUsers);
 
 // Update user details (Requires authentication)
-router.put("/users/:id", authenticator, updateUser);
+router.put("/users/:id", authenticator, uploader.single("profilePicture"), updateUser);
 
 // Delete a user (Admin only)
 router.delete("/users/:id", authenticator, authorization, deleteUser);
 
 // Make a user an admin (Admin only)
 router.put("/users/:id/make-admin", authenticator, authorization, makeAdmin);
+
+
+// Route to update user profile picture
+router.put('/profile-picture/:id', authenticator, uploader.single("profilePicture"), updateProfilePicture);
 
 
 // password 
