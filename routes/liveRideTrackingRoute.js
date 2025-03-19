@@ -1,11 +1,13 @@
 const express = require('express');
 const liveRideTrackingController = require('../controllers/liveRideTrackingController');
-const authMiddleware = require('../middlewares/authentication');
+const { authenticator } = require('../middlewares/authentication');
+
 
 const router = express.Router();
 
 // Protect all routes with authentication middleware
-router.use(authMiddleware);
+router.use(authenticator);
+
 
 // Start a ride
 router.post('/start', liveRideTrackingController.startRide);
