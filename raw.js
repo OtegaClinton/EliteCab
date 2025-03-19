@@ -1,6 +1,6 @@
 // routes/rideRoute.js
 const express = require("express");
-const router = express.Router();
+//const router = express.Router();
 const { authenticator } = require("../middlewares/authentication");
 const { createRide, getDriverRides, updateRide, deleteRide, getRideRequests, handleRideRequest, getAvailableRides, joinRide, getRideHistory } = require("../controllers/rideController");
 const { addVehicle, updateVehicle } = require("../controllers/vehicleController");
