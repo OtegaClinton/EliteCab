@@ -1,0 +1,19 @@
+feat: Implement Ride Management System, Vehicle Handling & Chat System
+
+Ride Requests: Drivers can view, accept, or reject requests.
+Ride Editing & Deletion: Drivers can update or cancel rides.
+Vehicle Management: Drivers can add/update vehicle details.
+
+- Added vehicle model, controller, and routes for:
+  - Adding and updating vehicle details
+
+- Integrated Google Maps API for dynamic route details
+
+- Implemented chat functionality:
+  - Chat model for storing messages
+  - Controller for sending and retrieving chat history
+  - Secured chat routes with authentication
+
+- Ensured authentication and authorization where necessary
+
+This commit enhances ride-sharing capabilities, allowing dynamic routes and seamless communication between drivers and passengers.
