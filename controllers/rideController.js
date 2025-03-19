@@ -84,3 +84,64 @@ exports.handleRideRequest = async (req, res) => {
         res.status(500).json({ error: "Error handling ride request" });
     }
 };
+
+// Passengers find available rides
+exports.getAvailableRides = async (req, res) => {
+    try {
+        const { from, to } = req.query;
+        const routeDetails = await getRouteDetails(from, to);
+
+        // Find rides going to a similar destination
+        const availableRides = await Ride.find({
+            to: routeDetails.endAddress,
+            availableSeats: { $gt: 0 } // Only show rides with available seats
+        }).populate("driver", "name vehicle"); // Populate driver details
+
+        res.status(200).json(availableRides);
+    } catch (error) {
+        res.status(500).json({ error: "Error fetching available rides" });
+    }
+};
+
+// Passengers join a ride
+exports.joinRide = async (req, res) => {
+    try {
+        const ride = await Ride.findById(req.params.id);
+
+        if (!ride) return res.status(404).json({ error: "Ride not found" });
+
+        if (ride.availableSeats <= 0) return res.status(400).json({ error: "No available seats" });
+
+        // Check if passenger is already in the ride request list
+        if (ride.passengers.includes(req.user.id)) {
+            return res.status(400).json({ error: "You have already requested to join this ride" });
+        }
+
+        // Add passenger to the ride request list (pending status)
+        ride.passengers.push({ user: req.user.id, status: "pending" });
+        await ride.save();
+
+        res.status(200).json({ message: "Ride request sent successfully", ride });
+    } catch (error) {
+        res.status(500).json({ error: "Error joining ride" });
+    }
+};
+
+// Users see their ride history
+exports.getRideHistory = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        // Fetch rides where user is either a driver or an accepted passenger
+        const rideHistory = await Ride.find({
+            $or: [
+                { driver: userId },
+                { "passengers.user": userId, "passengers.status": "accepted" }
+            ]
+        });
+
+        res.status(200).json(rideHistory);
+    } catch (error) {
+        res.status(500).json({ error: "Error fetching ride history" });
+    }
+};
