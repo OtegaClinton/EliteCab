@@ -482,53 +482,6 @@ exports.signUp = async (req, res) => {
     }
   };
 
-  
-
-  // exports.updateUser = async (req, res) => {
-  //   try {
-  //     const { id } = req.params;
-  //     const { firstName, lastName, phoneNumber } = req.body;
-  
-  //     // Ensure user exists
-  //     const user = await userModel.findById(id);
-  //     if (!user) {
-  //       return res.status(404).json({ message: "User not found." });
-  //     }
-  
-  //     // Validate firstName and lastName (if provided)
-  //     const nameRegex = /^[a-zA-Z]{3,}$/;
-  //     if (firstName && !nameRegex.test(firstName.trim())) {
-  //       return res.status(400).json({ message: "First name must be at least 3 letters with no symbols or numbers." });
-  //     }
-  //     if (lastName && !nameRegex.test(lastName.trim())) {
-  //       return res.status(400).json({ message: "Last name must be at least 3 letters with no symbols or numbers." });
-  //     }
-  
-  //     // Validate phoneNumber (if provided) - Must be exactly 11 digits
-  //     const phoneRegex = /^\d{11}$/; 
-  //     if (phoneNumber && !phoneRegex.test(phoneNumber.trim())) {
-  //       return res.status(400).json({ message: "Phone number must be exactly 11 digits, no letters or symbols." });
-  //     }
-  
-  //     // Update user with allowed fields only
-  //     const updatedUser = await userModel.findByIdAndUpdate(
-  //       id,
-  //       { firstName, lastName, phoneNumber },
-  //       { new: true }
-  //     ).select("-password"); // Exclude password from response
-  
-  //     return res.status(200).json({
-  //       message: "User details updated successfully.",
-  //       user: updatedUser,
-  //     });
-  
-  //   } catch (error) {
-  //     console.error("Error updating user:", error);
-  //     return res.status(500).json({ message: "An error occurred while updating user details." });
-  //   }
-  // };
-  
-
 
 exports.updateUser = async (req, res) => {
     try {
@@ -666,50 +619,6 @@ exports.updateUser = async (req, res) => {
   };
 
 
-
-// // Update Profile Picture Function
-// exports.updateProfilePicture = async (req, res) => {
-//     try {
-//         const { id } = req.params;
-
-//         // Ensure user exists
-//         const user = await userModel.findById(id);
-//         if (!user) {
-//             return res.status(404).json({ message: "User not found." });
-//         }
-
-//         // Ensure file is uploaded
-//         if (!req.file) {
-//             return res.status(400).json({ message: "Please upload a profile picture." });
-//         }
-
-//         // Delete old profile picture (Local Storage)
-//         if (user.profilePicture) {
-//             const oldImagePath = path.join(__dirname, '../media', user.profilePicture);
-//             if (fs.existsSync(oldImagePath)) {
-//                 fs.unlinkSync(oldImagePath);
-//             }
-//         }
-
-//         // Upload to Cloudinary
-//         const result = await cloudinary.uploader.upload(req.file.path, {
-//             folder: 'profile_pictures'
-//         });
-
-//         // Update user's profile picture
-//         user.profilePicture = result.secure_url;
-//         await user.save();
-
-//         return res.status(200).json({
-//             message: "Profile picture updated successfully.",
-//             profilePicture: user.profilePicture
-//         });
-
-//     } catch (error) {
-//         console.error("Error updating profile picture:", error);
-//         return res.status(500).json({ message: "An error occurred while updating the profile picture." });
-//     }
-// };
 
 exports.updateProfilePicture = async (req, res) => {
   try {
