@@ -3,141 +3,171 @@ const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const userModel = require("../models/userModel");
 const sendMail = require("../helpers/email");
+const cloudinary = require("../helpers/cloudinary");
+const fs = require("fs");
+const path = require("path");
+
 
 exports.signUp = async (req, res) => {
-    try {
-      let {
-        firstName = '',
-        lastName = '',
-        email = '',
-        password = '',
-        confirmPassword = '',
-        phoneNumber = '',
-        role = ''
-      } = req.body;
-  
-      // Check for missing or empty fields
-      if (!firstName.trim()) return res.status(400).json({ message: 'First name is required.' });
-      if (!lastName.trim()) return res.status(400).json({ message: 'Last name is required.' });
-      if (!email.trim()) return res.status(400).json({ message: 'Email is required.' });
-      if (!password) return res.status(400).json({ message: 'Password is required.' });
-      if (!confirmPassword) return res.status(400).json({ message: 'Confirm password is required.' });
-      if (!phoneNumber.trim()) return res.status(400).json({ message: 'Phone number is required.' });
-      if (!role.trim()) return res.status(400).json({ message: 'Role is required.' });
-  
-      // Trim and sanitize input
-      firstName = firstName.trim();
-      lastName = lastName.trim();
-      email = email.trim().toLowerCase();
-      phoneNumber = phoneNumber.trim();
-      role = role.trim().toLowerCase();
-  
-      // Define regex patterns
-      const namePattern = /^(?!.*[\W_]{2,})[A-Za-z]{3,}(?: [A-Za-z]+)*$/;
-      const passwordPattern = /^(?!.*[\W_]{2})(?=.*[A-Z])(?=.*[\W_]).{6,}$/;
-      const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      const phoneNumberPattern = /^\d{11}$/;
-  
-      // Validate input
-      if (!namePattern.test(firstName)) return res.status(400).json({ message: 'First name must be at least 3 letters, contain only letters, and no consecutive special characters.' });
-      if (!namePattern.test(lastName)) return res.status(400).json({ message: 'Last name must be at least 3 letters, contain only letters, and no consecutive special characters.' });
-      if (!emailPattern.test(email)) return res.status(400).json({ message: 'Invalid email format.' });
-      if (!passwordPattern.test(password)) return res.status(400).json({ message: 'Password must be at least 6 characters, contain an uppercase letter, one special character, and no consecutive special characters.' });
-      if (password !== confirmPassword) return res.status(400).json({ message: 'Passwords do not match.' });
-      if (!phoneNumberPattern.test(phoneNumber)) return res.status(400).json({ message: 'Phone number must be exactly 11 digits.' });
-  
-      // Ensure role is valid
-      const validRoles = ["driver", "passenger"];
-      if (!validRoles.includes(role)) return res.status(400).json({ message: "Invalid role value." });
-  
-      // Check if user already exists
-      const existingUser = await userModel.findOne({ $or: [{ email }, { phoneNumber }] });
-  
-      if (existingUser) {
-        if (existingUser.email === email) return res.status(400).json({ message: 'Email already in use.' });
-        if (existingUser.phoneNumber === phoneNumber) return res.status(400).json({ message: 'Phone number already in use.' });
-      }
-  
-      // Hash the password
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(password, salt);
-  
-      // Create a new user
-      const newUser = new userModel({
-        firstName,
-        lastName,
-        email,
-        password: hashedPassword,
-        phoneNumber,
-        role,
-        isAdmin: false, // Admin status should not be included in req.body
-        isVerified: false
-      });
-  
-      // Save the user to the database
-      await newUser.save();
-  
-      // Generate a JWT token
-      const userToken = jwt.sign(
-        { id: newUser._id, email: newUser.email },
-        process.env.JWT_SECRET,
-        { expiresIn: '24h' }
-      );
-  
-      // Construct the verification link
-      const verifyLink = `${req.protocol}://${req.get('host')}/api/v1/verify/${newUser._id}/${userToken}`;
-  
-      // Generate email template for Elite Cab
-      const emailTemplate = `
-        <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center; border-radius: 10px;">
-          <h2 style="color: #007bff;">🚖 Welcome to Elite Cab, ${newUser.firstName}! 🚖</h2>
-          <p style="color: #333; font-size: 16px;">
-            Your journey with Elite Cab starts here! To book or offer rides, please verify your email.
-          </p>
-          <a href="${verifyLink}" style="display: inline-block; padding: 12px 24px; font-size: 18px; 
-            background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
-            ✅ Verify Your Email
-          </a>
-          <p style="color: #555; font-size: 14px;">
-            If you didn’t sign up for Elite Cab, ignore this email.
-          </p>
-          <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
-          <p style="color: #777; font-size: 14px;">
-            &copy; ${new Date().getFullYear()} Elite Cab. Drive smart, ride safe.
-          </p>
-        </div>
-      `;
-  
-      // Send verification email
-      await sendMail({
-        subject: 'Kindly verify your email.',
-        to: newUser.email,
-        html: emailTemplate
-      });
-  
-      res.status(201).json({
-        message: 'Account created successfully. Please check your email to verify your account.',
-        user: {
-          id: newUser._id,
-          firstName: newUser.firstName,
-          lastName: newUser.lastName,
-          email: newUser.email,
-          phoneNumber: newUser.phoneNumber,
-          role: newUser.role,
-          isVerified: newUser.isVerified
-        }
-      });
-  
-    } catch (error) {
-      console.error('Error during sign-up:', error);
-  
-      if (error.code === 11000) {
-        return res.status(400).json({ message: 'Email or phone number already in use.' });
-      }
-  
-      res.status(500).json({ message: 'An error occurred during sign-up.' });
+  try {
+    let {
+      firstName = '',
+      lastName = '',
+      username = '',
+      email = '',
+      password = '',
+      confirmPassword = '',
+      phoneNumber = '',
+      gender = '',
+      role = '',
+      location = ''
+    } = req.body;
+
+    // Check for missing or empty fields
+    if (!firstName.trim()) return res.status(400).json({ message: 'First name is required.' });
+    if (!lastName.trim()) return res.status(400).json({ message: 'Last name is required.' });
+    if (!username.trim()) return res.status(400).json({ message: 'Username is required.' });
+    if (!email.trim()) return res.status(400).json({ message: 'Email is required.' });
+    if (!password) return res.status(400).json({ message: 'Password is required.' });
+    if (!confirmPassword) return res.status(400).json({ message: 'Confirm password is required.' });
+    if (!phoneNumber.trim()) return res.status(400).json({ message: 'Phone number is required.' });
+    if (!gender.trim()) return res.status(400).json({ message: 'Gender is required.' });
+    if (!role.trim()) return res.status(400).json({ message: 'Role is required.' });
+    if (!location.trim()) return res.status(400).json({ message: 'Location is required.' });
+
+    // Trim and sanitize input
+    firstName = firstName.trim();
+    lastName = lastName.trim();
+    username = username.trim();
+    email = email.trim().toLowerCase();
+    phoneNumber = phoneNumber.trim();
+    gender = gender.trim().toLowerCase();
+    role = role.trim().toLowerCase();
+    location = location.trim();
+
+    // Define regex patterns
+    const namePattern = /^[A-Za-z]{3,}(?: [A-Za-z]+)*$/;
+    const usernamePattern = /^[a-zA-Z0-9_]{3,}$/;
+    const passwordPattern = /^(?=.*[A-Z])(?=.*[\W_]).{6,}$/;
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneNumberPattern = /^\d{11}$/;
+    
+    // Validate input
+    if (!namePattern.test(firstName)) return res.status(400).json({ message: 'First name must be at least 3 letters and contain only alphabets.' });
+    if (!namePattern.test(lastName)) return res.status(400).json({ message: 'Last name must be at least 3 letters and contain only alphabets.' });
+    if (!usernamePattern.test(username)) return res.status(400).json({ message: 'Username must be at least 3 characters long and can only contain letters, numbers, and underscores.' });
+    if (!emailPattern.test(email)) return res.status(400).json({ message: 'Invalid email format.' });
+    if (!passwordPattern.test(password)) return res.status(400).json({ message: 'Password must be at least 6 characters, contain an uppercase letter, and a special character.' });
+    if (password !== confirmPassword) return res.status(400).json({ message: 'Passwords do not match.' });
+    if (!phoneNumberPattern.test(phoneNumber)) return res.status(400).json({ message: 'Phone number must be exactly 11 digits.' });
+
+    // Ensure gender and role are valid
+    const validGenders = ["male", "female", "others", "prefer not to say"];
+    const validRoles = ["driver", "passenger"];
+
+    if (!validGenders.includes(gender)) return res.status(400).json({ 
+      message: `Invalid gender value. Allowed values are: ${validGenders.join(', ')}.` 
+    });
+    if (!validRoles.includes(role)) return res.status(400).json({ 
+      message:`Invalid role value. Allowed values are: ${validRoles.join(', ')}.` 
+    });
+
+    // Check if user already exists
+    const existingUser = await userModel.findOne({ $or: [{ email }, { username }, { phoneNumber }] });
+
+    if (existingUser) {
+      if (existingUser.email === email) return res.status(400).json({ message: 'This email is already registered.' });
+      if (existingUser.username === username) return res.status(400).json({ message: 'This username is already taken.' });
+      if (existingUser.phoneNumber === phoneNumber) return res.status(400).json({ message: 'This phone number is already registered.' });
     }
-  };
+
+    // Hash the password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
+    // Create a new user
+    const newUser = new userModel({
+      firstName,
+      lastName,
+      username,
+      email,
+      password: hashedPassword,
+      phoneNumber,
+      gender,
+      role,
+      location,
+      isAdmin: false,
+      isVerified: false
+    });
+
+    // Save the user to the database
+    await newUser.save();
+
+    // Generate a JWT token
+    const userToken = jwt.sign(
+      { id: newUser._id, email: newUser.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Construct the verification link
+    const verifyLink = `${req.protocol}://${req.get('host')}/api/v1/verify/${newUser._id}/${userToken}`;
+
+    // Generate email template for Elite Cab
+    const emailTemplate = `
+      <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px; text-align: center; border-radius: 10px;">
+        <h2 style="color: #007bff;">🚖 Welcome to Elite Cab, ${newUser.firstName}! 🚖</h2>
+        <p style="color: #333; font-size: 16px;">
+          Your journey with Elite Cab starts here! To book or offer rides, please verify your email.
+        </p>
+        <a href="${verifyLink}" style="display: inline-block; padding: 12px 24px; font-size: 18px; 
+          background-color: #007bff; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;">
+          ✅ Verify Your Email
+        </a>
+        <p style="color: #555; font-size: 14px;">
+          If you didn’t sign up for Elite Cab, ignore this email.
+        </p>
+        <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+        <p style="color: #777; font-size: 14px;">
+          &copy; ${new Date().getFullYear()} Elite Cab. Drive smart, ride safe.
+        </p>
+      </div>
+    `;
+
+    // Send verification email
+    await sendMail({
+      subject: 'Kindly verify your email.',
+      to: newUser.email,
+      html: emailTemplate
+    });
+
+    res.status(201).json({
+      message: 'Account created successfully. Please check your email to verify your account.',
+      user: {
+        id: newUser._id,
+        firstName: newUser.firstName,
+        lastName: newUser.lastName,
+        username: newUser.username,
+        email: newUser.email,
+        phoneNumber: newUser.phoneNumber,
+        gender: newUser.gender,
+        role: newUser.role,
+        location: newUser.location,
+        isVerified: newUser.isVerified
+      }
+    });
+
+  } catch (error) {
+    console.error('Error during sign-up:', error);
+
+    if (error.code === 11000) {
+      return res.status(400).json({ message: 'Email, username, or phone number already in use.' });
+    }
+
+    res.status(500).json({ message: 'An error occurred during sign-up.' });
+  }
+};
+
   
 
 
@@ -452,52 +482,83 @@ exports.signUp = async (req, res) => {
     }
   };
 
-  
 
-  exports.updateUser = async (req, res) => {
+exports.updateUser = async (req, res) => {
     try {
-      const { id } = req.params;
-      const { firstName, lastName, phoneNumber } = req.body;
-  
-      // Ensure user exists
-      const user = await userModel.findById(id);
-      if (!user) {
-        return res.status(404).json({ message: "User not found." });
-      }
-  
-      // Validate firstName and lastName (if provided)
-      const nameRegex = /^[a-zA-Z]{3,}$/;
-      if (firstName && !nameRegex.test(firstName.trim())) {
-        return res.status(400).json({ message: "First name must be at least 3 letters with no symbols or numbers." });
-      }
-      if (lastName && !nameRegex.test(lastName.trim())) {
-        return res.status(400).json({ message: "Last name must be at least 3 letters with no symbols or numbers." });
-      }
-  
-      // Validate phoneNumber (if provided) - Must be exactly 11 digits
-      const phoneRegex = /^\d{11}$/; 
-      if (phoneNumber && !phoneRegex.test(phoneNumber.trim())) {
-        return res.status(400).json({ message: "Phone number must be exactly 11 digits, no letters or symbols." });
-      }
-  
-      // Update user with allowed fields only
-      const updatedUser = await userModel.findByIdAndUpdate(
-        id,
-        { firstName, lastName, phoneNumber },
-        { new: true }
-      ).select("-password"); // Exclude password from response
-  
-      return res.status(200).json({
-        message: "User details updated successfully.",
-        user: updatedUser,
-      });
-  
+        const { id } = req.params;
+        const { firstName, lastName, phoneNumber, gender, location } = req.body;
+
+        // Ensure user exists
+        const user = await userModel.findById(id);
+        if (!user) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // Validate firstName and lastName (if provided)
+        const nameRegex = /^[a-zA-Z]{3,}$/;
+        if (firstName && !nameRegex.test(firstName.trim())) {
+            return res.status(400).json({ message: "First name must be at least 3 letters with no symbols or numbers." });
+        }
+        if (lastName && !nameRegex.test(lastName.trim())) {
+            return res.status(400).json({ message: "Last name must be at least 3 letters with no symbols or numbers." });
+        }
+
+        // Validate phoneNumber (if provided) - Must be exactly 11 digits
+        const phoneRegex = /^\d{11}$/;
+        if (phoneNumber && !phoneRegex.test(phoneNumber.trim())) {
+            return res.status(400).json({ message: "Phone number must be exactly 11 digits, no letters or symbols." });
+        }
+
+        // Check if phone number already exists (excluding the current user)
+        if (phoneNumber) {
+            const existingUser = await userModel.findOne({ phoneNumber, _id: { $ne: id } });
+            if (existingUser) {
+                return res.status(400).json({ message: "Phone number is already in use by another user." });
+            }
+        }
+
+        // Validate gender (if provided)
+        const validGenders = ["male", "female", "non-binary", "prefer not to say"];
+        if (gender && !validGenders.includes(gender.toLowerCase())) {
+            return res.status(400).json({ message: `Invalid gender value. Allowed values: ${validGenders.join(", ")}.` });
+        }
+
+        // Handle profile picture upload
+        let updatedProfilePicture = user.profilePicture;
+        if (req.file) {
+            // Upload new image to Cloudinary
+            const result = await cloudinary.uploader.upload(req.file.path, { folder: "profile_pictures" });
+
+            // Delete old profile picture from Cloudinary (if exists)
+            if (user.profilePicture.pictureId) {
+                await cloudinary.uploader.destroy(user.profilePicture.pictureId);
+            }
+
+            // Update profile picture data
+            updatedProfilePicture = {
+                pictureId: result.public_id,
+                pictureUrl: result.secure_url
+            };
+        }
+
+        // Update user with allowed fields only (excluding unique fields like email & username)
+        const updatedUser = await userModel.findByIdAndUpdate(
+            id,
+            { firstName, lastName, phoneNumber, gender, location, profilePicture: updatedProfilePicture },
+            { new: true }
+        ).select("-password"); // Exclude password from response
+
+        return res.status(200).json({
+            message: "User details updated successfully.",
+            user: updatedUser,
+        });
+
     } catch (error) {
-      console.error("Error updating user:", error);
-      return res.status(500).json({ message: "An error occurred while updating user details." });
+        console.error("Error updating user:", error);
+        return res.status(500).json({ message: "An error occurred while updating user details." });
     }
-  };
-  
+};
+
   
   exports.deleteUser = async (req, res) => {
     try {
@@ -556,4 +617,49 @@ exports.signUp = async (req, res) => {
       return res.status(500).json({ message: "An error occurred while updating user role." });
     }
   };
-  
+
+
+
+exports.updateProfilePicture = async (req, res) => {
+  try {
+      const { id } = req.params;
+
+      // Ensure user exists
+      const user = await userModel.findById(id);
+      if (!user) {
+          return res.status(404).json({ message: "User not found." });
+      }
+
+      // Check if a file is uploaded
+      if (!req.file) {
+          return res.status(400).json({ message: "Please upload a profile picture." });
+      }
+
+      // Upload new image to Cloudinary
+      const uploadedImage = await cloudinary.uploader.upload(req.file.path, {
+          folder: "profile_pictures",
+      });
+
+      // Delete old picture from Cloudinary (if it exists)
+      if (user.profilePicture.pictureId) {
+          await cloudinary.uploader.destroy(user.profilePicture.pictureId);
+      }
+
+      // Update user's profilePicture field with new image data
+      user.profilePicture = {
+          pictureId: uploadedImage.public_id,
+          pictureUrl: uploadedImage.secure_url,
+      };
+
+      await user.save();
+
+      return res.status(200).json({
+          message: "Profile picture updated successfully.",
+          profilePicture: user.profilePicture,
+      });
+
+  } catch (error) {
+      console.error("Error updating profile picture:", error);
+      return res.status(500).json({ message: "An error occurred while updating the profile picture." });
+  }
+};

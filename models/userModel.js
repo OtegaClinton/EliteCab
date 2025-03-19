@@ -12,6 +12,12 @@ const UserSchema = new mongoose.Schema(
       required: true 
     },
 
+    username: {  
+      type: String, 
+      required: true, 
+      unique: true 
+    },
+
     email: { 
       type: String, 
       required: true, 
@@ -26,6 +32,12 @@ const UserSchema = new mongoose.Schema(
     phoneNumber: { 
       type: String, 
       required: true 
+    },
+
+    gender: { 
+      type: String, 
+      enum: ["male", "female", "others", "prefer not to say"], 
+      default: "prefer not to say" 
     },
 
     role: { 
@@ -47,7 +59,24 @@ const UserSchema = new mongoose.Schema(
     isVerified: { 
       type: Boolean, 
       default: false 
-    }
+    },
+
+    profilePicture: { 
+      pictureId: { type: String, default: "" }, 
+      pictureUrl: { type: String, default: "" } 
+    }, 
+
+   location: { 
+    type: String, 
+    required: true
+   },
+
+    ratings: { 
+      type: Number, 
+      default: 0, 
+      min: 0, 
+      max: 5 
+    }, 
   }, 
   { timestamps: true }
 );
