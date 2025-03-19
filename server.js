@@ -11,7 +11,7 @@ const PORT = process.env.PORT || 2025;
 const app = express();
 const server = http.createServer(app);
 const limiter = rateLimit({
-    windowMs: 5 * 60 * 1000, // 5 minutes
+    windowMs: 10 * 60 * 1000, // 10 minutes
     max: 100, // Limit each IP to 100 requests per windowMs
     message: "Too many requests, please try again later.",
   });
