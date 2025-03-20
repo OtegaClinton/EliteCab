@@ -17,3 +17,7 @@ Vehicle Management: Drivers can add/update vehicle details.
 - Ensured authentication and authorization where necessary
 
 This commit enhances ride-sharing capabilities, allowing dynamic routes and seamless communication between drivers and passengers.
+
+
+DATABASE_User = madukwes
+DATABASE_Pass = Captain6ix

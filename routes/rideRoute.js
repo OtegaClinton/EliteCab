@@ -16,7 +16,7 @@ const {
 const { addVehicle, updateVehicle } = require("../controllers/vehicleController");
 
 // Drivers create a ride
-router.post("/api/rides", authenticator, createRide);
+router.post("/rides", authenticator, createRide);
 
 // Get all rides offered by the current driver
 router.get("/api/rides/driver", authenticator, getDriverRides);

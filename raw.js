@@ -301,3 +301,30 @@ router.post("/chat", authenticator, sendMessage);
 router.get("/chat/:userId", authenticator, getChatHistory);
 
 module.exports = router;
+
+
+exports.createRide = async (req, res) => {
+    try {
+        const { from, to, availableSeats } = req.body;
+        const driverId = req.user.id;
+        console.log("Received ride creation request:", { from, to, availableSeats, driverId });
+        
+        const routeDetails = await getRouteDetails(from, to);
+        console.log("Route details fetched:", routeDetails);
+
+        const newRide = new Ride({
+            driver: driverId,
+            from: routeDetails.startAddress,
+            to: routeDetails.endAddress,
+            availableSeats,
+            passengers: []
+        });
+        
+        await newRide.save();
+        console.log("Ride successfully created:", newRide);
+        res.status(201).json({ message: "Ride created successfully", ride: newRide });
+    } catch (error) {
+        console.error("Error creating ride:", error);
+        res.status(500).json({ error: "Error creating ride" });
+    }
+};

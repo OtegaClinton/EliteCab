@@ -1,26 +1,34 @@
 const Ride = require("../models/rideModel");
-const { getRouteDetails } = require("../utils/googleMapsHelper");
+const { getRoute } = require("../utils/osmHelper"); 
 
-// Create a ride (Driver only, with Google Maps integration)
+// Create a ride (Driver only, with OSM Helper)
 exports.createRide = async (req, res) => {
     try {
         const { from, to, availableSeats } = req.body;
         const driverId = req.user.id;
-        const routeDetails = await getRouteDetails(from, to);
-        
+
+        // Fetch route details using OSM
+        const routeDetails = await getRoute(from, to);
+        console.log(from, to)
+        // Create a new ride
         const newRide = new Ride({
             driver: driverId,
-            from: routeDetails.startAddress,
-            to: routeDetails.endAddress,
+            from,
+            to,
             availableSeats,
-            passengers: []
+            passengers: [],
+            distance: routeDetails.distance,
+            duration: routeDetails.duration
         });
+
         await newRide.save();
         res.status(201).json({ message: "Ride created successfully", ride: newRide });
     } catch (error) {
+        console.error(error);
         res.status(500).json({ error: "Error creating ride" });
     }
 };
+
 
 // Get all rides offered by the current driver
 exports.getDriverRides = async (req, res) => {
@@ -89,7 +97,7 @@ exports.handleRideRequest = async (req, res) => {
 exports.getAvailableRides = async (req, res) => {
     try {
         const { from, to } = req.query;
-        const routeDetails = await getRouteDetails(from, to);
+        const routeDetails = await getRoute(from, to);
 
         // Find rides going to a similar destination
         const availableRides = await Ride.find({
