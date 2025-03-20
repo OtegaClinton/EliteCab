@@ -3,6 +3,8 @@ const express = require("express");
 const multer = require("multer");
 require("./config/db"); 
 const userRoutes = require("./routes/userRoute");
+const chatRoutes = require("./routes/chatRoute");
+const rideRoutes = require("./routes/rideRoute"); 
 const http = require('http');
 const liveRideTrackingRoutes = require('./routes/liveRideTrackingRoute');
 const socketConnect = require('./sockets/socketConnection');
@@ -19,7 +21,7 @@ const limiter = rateLimit({
 
 app.use(express.json());
 
-app.use("/api/v1", userRoutes);
+app.use("/api/v1", userRoutes, chatRoutes, rideRoutes);
 app.use('/api/live-ride-tracking', limiter, liveRideTrackingRoutes);
 
 // Socket.io connection
