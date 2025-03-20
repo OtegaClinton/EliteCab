@@ -15,7 +15,7 @@ const sendMail = async (options) => {
 
     // Define the email options
     const mailOptions = {
-      from: `"RentWave" <${process.env.mailUser}>`, 
+      from: `"EliteCab" <${process.env.mailUser}>`, 
       to: options.to, // Recipient email address
       subject: options.subject, // Email subject
       text: options.text || '', // Optional plain text content
