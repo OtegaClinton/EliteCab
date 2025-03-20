@@ -10,10 +10,10 @@ router.use(authenticator);
 // Start a ride
 router.post('/start', liveRideTrackingController.startRide);
 
-// End a ride
-router.post('/end', liveRideTrackingController.endRide);
-
 // Update location (real-time)
 router.post('/update-location', liveRideTrackingController.updateLocation);
+
+// End a ride
+router.post('/end', liveRideTrackingController.endRide);
 
 module.exports = router;
