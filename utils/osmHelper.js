@@ -1,6 +1,5 @@
 const axios = require('axios');
 
-//Get Coordinates from Address (Geocoding)
 async function getCoordinates(address) {
     const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(address)}&format=json`;
     try {
@@ -35,6 +34,5 @@ async function getRoute(fromAddress, toAddress) {
         throw error;
     }
 }
-
-
 module.exports = { getRoute };
+

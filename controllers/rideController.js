@@ -96,20 +96,26 @@ exports.handleRideRequest = async (req, res) => {
 // Passengers find available rides
 exports.getAvailableRides = async (req, res) => {
     try {
-        const { from, to } = req.query;
-        const routeDetails = await getRoute(from, to);
+        const { from, to } = req.query; 
 
-        // Find rides going to a similar destination
+        if (!from || !to) {
+            return res.status(400).json({ error: "Both 'from' and 'to' locations are required" });
+        }
+
+        // Find rides that match the "from" and "to" locations
         const availableRides = await Ride.find({
-            to: routeDetails.endAddress,
-            availableSeats: { $gt: 0 } // Only show rides with available seats
+            from: { $regex: from, $options: "i" }, // Case-insensitive search
+            to: { $regex: to, $options: "i" },
+            availableSeats: { $gt: 0 } // Ensure there are available seats
         }).populate("driver", "name vehicle"); // Populate driver details
 
         res.status(200).json(availableRides);
     } catch (error) {
+        console.error("Error fetching available rides:", error);
         res.status(500).json({ error: "Error fetching available rides" });
     }
 };
+
 
 // Passengers join a ride
 exports.joinRide = async (req, res) => {
