@@ -584,28 +584,33 @@ exports.updateUser = async (req, res) => {
 
   exports.makeAdmin = async (req, res) => {
     try {
-      const { id } = req.params; // User ID to be updated
+      const { id } = req.params;
       const requestingUser = req.user; // The user making the request
   
       // Ensure only admins can perform this action
       if (!requestingUser.isAdmin) {
-        return res.status(403).json({ message: "Access denied. Only admins can assign admin roles." });
+        return res.status(403).json({ message: "Unauthorized. Only admins can assign admin roles." });
       }
   
-      // Find the user to update
-      const user = await userModel.findById(id);
+      // Validate MongoDB ObjectId
+      if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ message: "Invalid user ID format." });
+      }
+  
+      // Find and update user role
+      const user = await userModel.findByIdAndUpdate(
+        id,
+        { isAdmin: true },
+        { new: true }
+      );
+  
       if (!user) {
         return res.status(404).json({ message: "User not found." });
       }
   
-      // Check if the user is already an admin
       if (user.isAdmin) {
-        return res.status(400).json({ message: "User is already an admin." });
+        return res.status(400).json({ message: "User is already an admin. No changes were made." });
       }
-  
-      // Update user role to admin
-      user.isAdmin = true;
-      await user.save();
   
       return res.status(200).json({
         message: `${user.firstName} is now an Admin and has been granted admin privileges.`,
@@ -617,6 +622,7 @@ exports.updateUser = async (req, res) => {
       return res.status(500).json({ message: "An error occurred while updating user role." });
     }
   };
+  
 
 
 
