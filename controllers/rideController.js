@@ -53,12 +53,24 @@ exports.updateRide = async (req, res) => {
 // Cancel a ride
 exports.deleteRide = async (req, res) => {
     try {
+        const ride = await Ride.findById(req.params.id);
+        
+        if (!ride) {
+            return res.status(404).json({ error: "Ride not found" });
+        }
+
+        // Check if the logged-in user is the driver
+        if (ride.driver.toString() !== req.user._id.toString()) {
+            return res.status(403).json({ error: "You are not authorized to cancel this ride" });
+        }
+
         await Ride.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Ride cancelled successfully" });
     } catch (error) {
         res.status(500).json({ error: "Error cancelling ride" });
     }
 };
+
 
 // Get passenger requests for a ride
 exports.getRideRequests = async (req, res) => {
@@ -78,7 +90,7 @@ exports.handleRideRequest = async (req, res) => {
         
         if (!ride) return res.status(404).json({ error: "Ride not found" });
         
-        const passengerIndex = ride.passengers.findIndex(p => p.toString() === req.params.requestId);
+        const passengerIndex = ride.passengers.findIndex(p => p.user.toString() === req.params.requestId);
         if (passengerIndex === -1) return res.status(404).json({ error: "Passenger request not found" });
         
         if (status === "accepted") {
@@ -89,6 +101,7 @@ exports.handleRideRequest = async (req, res) => {
         await ride.save();
         res.status(200).json({ message: `Passenger request ${status}`, ride });
     } catch (error) {
+        console.log(error)
         res.status(500).json({ error: "Error handling ride request" });
     }
 };
