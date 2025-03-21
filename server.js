@@ -1,5 +1,6 @@
 require("dotenv").config();
 const express = require("express");
+const axios = require('axios');
 const multer = require("multer");
 require("./config/db"); 
 const userRoutes = require("./routes/userRoute");
@@ -7,6 +8,7 @@ const chatRoutes = require("./routes/chatRoute");
 const rideRoutes = require("./routes/rideRoute"); 
 const http = require('http');
 const liveRideTrackingRoutes = require('./routes/liveRideTrackingRoute');
+const { getRoute } = require("./utils/osmHelper"); 
 const socketConnect = require('./sockets/socketConnection');
 const rateLimit = require("express-rate-limit"); // Rate Limiting for the APIs
 
