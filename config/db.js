@@ -9,3 +9,6 @@ mongoose.connect(uri)
 .catch((error)=>{
     console.log(`Error connecting to Database.`,error.message)
 });
+
+
+module.exports =  mongoose.connect;
