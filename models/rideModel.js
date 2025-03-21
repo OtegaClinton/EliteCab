@@ -27,8 +27,8 @@ const RideSchema = new mongoose.Schema(
     },
 
     passengers: [{ 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User" 
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      status: { type: String, enum: ['pending', 'approved'], default: 'pending' }
     }],
 
     status: { 
