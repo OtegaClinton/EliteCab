@@ -115,69 +115,64 @@ const forgotPassword = async (req, res) => {
 
 
 const resetPassword = async (req, res) => {
-    try {
+  try {
       const { token } = req.params;
       const { newPassword, confirmNewPassword } = req.body;
-  
+
       // Validate passwords
       if (!newPassword || !confirmNewPassword) {
-        return res.status(400).json({
-          message: "Both new password and confirmation are required.",
-        });
+          return res.status(400).json({
+              message: "Both new password and confirmation are required.",
+          });
       }
-  
-      // Ensure passwords match
+
       if (newPassword !== confirmNewPassword) {
-        return res.status(400).json({
-          message: "New password and confirmation do not match.",
-        });
+          return res.status(400).json({
+              message: "New password and confirmation do not match.",
+          });
       }
-  
-      // Validate password format (Elite Cab pattern)
+
+      // Validate password format
       const passwordPattern = /^(?!.*[\W_]{2})(?=.*[A-Z])(?=.*[\W_]).{6,}$/;
       if (!passwordPattern.test(newPassword)) {
-        return res.status(400).json({
-          message:
-            "Password must be at least 6 characters long, contain one uppercase letter, and at least one special character.",
-        });
+          return res.status(400).json({
+              message: "Password must be at least 6 characters long, contain one uppercase letter, and at least one special character.",
+          });
       }
-  
+
       // Verify token
       let decodedToken;
       try {
-        decodedToken = jwt.verify(token, process.env.JWT_SECRET);
+          decodedToken = jwt.verify(token, process.env.JWT_SECRET);
       } catch (err) {
-        return res.status(401).json({
-          message: "Invalid or expired token.",
-        });
+          return res.status(401).json({ message: "Invalid or expired token." });
       }
-  
+
       // Find user by ID
       const user = await userModel.findById(decodedToken.userId);
       if (!user) {
-        return res.status(404).json({
-          message: "Invalid or expired token.",
-        });
+          return res.status(404).json({ message: "User not found." });
       }
-  
-      // Hash new password
+
+      // Prevent resetting to the current password
+      const isSamePassword = await bcrypt.compare(newPassword, user.password);
+      if (isSamePassword) {
+          return res.status(400).json({ message: "New password must be different from the current password." });
+      }
+
+      // Hash and update the password
       const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash(newPassword, salt);
-  
-      // Update user's password
-      user.password = hashedPassword;
+      user.password = await bcrypt.hash(newPassword, salt);
       await user.save();
-  
-      res.status(200).json({
-        message: "Password reset successful.",
-      });
-    } catch (error) {
+
+      res.status(200).json({ message: "Password reset successful." });
+
+  } catch (error) {
       console.error("Reset Password Error:", error);
-      res.status(500).json({
-        message: "An error occurred. Please try again later.",
-      });
-    }
-  };
+      res.status(500).json({ message: "An error occurred. Please try again later." });
+  }
+};
+
   
 
 module.exports = {changePassword, forgotPassword, resetPassword};

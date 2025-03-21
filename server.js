@@ -16,6 +16,7 @@ const http = require('http');
 const liveRideTrackingRoutes = require('./routes/liveRideTrackingRoute');
 const { getRoute } = require("./utils/osmHelper"); 
 const socketConnect = require('./sockets/socketConnection');
+// const socketConnect = require('./sockets/socketConnection');
 const rateLimit = require("express-rate-limit"); // Rate Limiting for the APIs
 
 const PORT = process.env.PORT || 2025;
@@ -36,8 +37,11 @@ app.use('/api/live-ride-tracking', limiter, liveRideTrackingRoutes);
 app.use('/payment', paymentRoutes); // Payment API routes
 app.use('/ride', reviewRoutes); // Review API routes
 
-// Socket.io connection
-socketConnect(server);
+// Import Socket.IO initialization
+const socketConnect = require('./sockets/socketConnection');
+
+// Initialize Socket.IO
+socketConnect.init(server);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -67,7 +71,7 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Server is listening on PORT: ${PORT}`);
 });
 
