@@ -1,12 +1,21 @@
+require('./controllers/paymentController');
 require("dotenv").config();
 const express = require("express");
+const axios = require('axios');
 const multer = require("multer");
+const cors = require('cors');
 require("./config/db"); 
 const userRoutes = require("./routes/userRoute");
 const chatRoutes = require("./routes/chatRoute");
 const rideRoutes = require("./routes/rideRoute"); 
+const paymentRoutes = require('./routes/paymentRoutes');
+const reviewRoutes = require('./routes/reviewRoutes');
+
+
 const http = require('http');
 const liveRideTrackingRoutes = require('./routes/liveRideTrackingRoute');
+const { getRoute } = require("./utils/osmHelper"); 
+const socketConnect = require('./sockets/socketConnection');
 // const socketConnect = require('./sockets/socketConnection');
 const rateLimit = require("express-rate-limit"); // Rate Limiting for the APIs
 
@@ -19,10 +28,14 @@ const limiter = rateLimit({
     message: "Too many requests, please try again later.",
   });
 
+app.use(cors()); 
 app.use(express.json());
+
 
 app.use("/api/v1", userRoutes, chatRoutes, rideRoutes);
 app.use('/api/live-ride-tracking', limiter, liveRideTrackingRoutes);
+app.use('/payment', paymentRoutes); // Payment API routes
+app.use('/ride', reviewRoutes); // Review API routes
 
 // Import Socket.IO initialization
 const socketConnect = require('./sockets/socketConnection');
@@ -61,3 +74,4 @@ app.use((err, req, res, next) => {
 server.listen(PORT, () => {
     console.log(`🚀 Server is listening on PORT: ${PORT}`);
 });
+
