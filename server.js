@@ -7,7 +7,7 @@ const chatRoutes = require("./routes/chatRoute");
 const rideRoutes = require("./routes/rideRoute"); 
 const http = require('http');
 const liveRideTrackingRoutes = require('./routes/liveRideTrackingRoute');
-const socketConnect = require('./sockets/socketConnection');
+// const socketConnect = require('./sockets/socketConnection');
 const rateLimit = require("express-rate-limit"); // Rate Limiting for the APIs
 
 const PORT = process.env.PORT || 2025;
@@ -24,8 +24,11 @@ app.use(express.json());
 app.use("/api/v1", userRoutes, chatRoutes, rideRoutes);
 app.use('/api/live-ride-tracking', limiter, liveRideTrackingRoutes);
 
-// Socket.io connection
-socketConnect(server);
+// Import Socket.IO initialization
+const socketConnect = require('./sockets/socketConnection');
+
+// Initialize Socket.IO
+socketConnect.init(server);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -55,6 +58,6 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(PORT, () => {
+server.listen(PORT, () => {
     console.log(`🚀 Server is listening on PORT: ${PORT}`);
 });
