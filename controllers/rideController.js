@@ -29,6 +29,28 @@ exports.createRide = async (req, res) => {
     }
 };
 
+exports.addReview = (req, res) => {
+    try {
+        const { userId, rideId, rating, comment } = req.body;
+
+        if (!userId || !rideId || !rating) {
+            return res.status(400).json({ message: "Missing required fields" });
+        }
+
+        // Simulating saving to a database (Replace this with actual DB logic)
+        const newReview = {
+            userId,
+            rideId,
+            rating,
+            comment,
+            createdAt: new Date(),
+        };
+
+        res.status(201).json({ message: "Review added successfully", review: newReview });
+    } catch (error) {
+        res.status(500).json({ message: "Server error", error });
+    }
+};
 
 // Get all rides offered by the current driver
 exports.getDriverRides = async (req, res) => {
