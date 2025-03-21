@@ -43,8 +43,20 @@ exports.getDriverRides = async (req, res) => {
 // Update ride details
 exports.updateRide = async (req, res) => {
     try {
-        const ride = await Ride.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.status(200).json({ message: "Ride updated successfully", ride });
+        const ride = await Ride.findById(req.params.id);
+        
+        // Check if the ride exists
+        if (!ride) {
+            return res.status(404).json({ error: "Ride not found" });
+        }
+        
+        // Check if the logged-in user is the driver
+        if (ride.driver.toString() !== req.user.id.toString()) {
+            return res.status(403).json({ error: "You are not authorized to Update Ride details" });
+        }
+       
+       const updatedRide = await Ride.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.status(200).json({ message: "Ride updated successfully", ride: updatedRide });
     } catch (error) {
         res.status(500).json({ error: "Error updating ride" });
     }
@@ -55,21 +67,25 @@ exports.deleteRide = async (req, res) => {
     try {
         const ride = await Ride.findById(req.params.id);
         
+        // Check if the ride exists
         if (!ride) {
             return res.status(404).json({ error: "Ride not found" });
         }
 
         // Check if the logged-in user is the driver
-        if (ride.driver.toString() !== req.user._id.toString()) {
+        if (ride.driver.toString() !== req.user.id.toString()) {
             return res.status(403).json({ error: "You are not authorized to cancel this ride" });
         }
 
+        // Proceed with deleting the ride
         await Ride.findByIdAndDelete(req.params.id);
         res.status(200).json({ message: "Ride cancelled successfully" });
     } catch (error) {
+        console.log(error);  // Log the error to help debug
         res.status(500).json({ error: "Error cancelling ride" });
     }
 };
+
 
 
 // Get passenger requests for a ride
@@ -121,6 +137,11 @@ exports.getAvailableRides = async (req, res) => {
             to: { $regex: to, $options: "i" },
             availableSeats: { $gt: 0 } // Ensure there are available seats
         }).populate("driver", "name vehicle"); // Populate driver details
+
+         // Check if no rides are found
+         if (availableRides.length === 0) {
+            return res.status(200).json({ message: "No available rides now" });
+        }
 
         res.status(200).json(availableRides);
     } catch (error) {
