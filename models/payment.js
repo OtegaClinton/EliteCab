@@ -10,7 +10,7 @@ router.post('/create-payment', async (req, res) => {
         intent: 'CAPTURE',
         purchase_units: [{
             amount: {
-                currency_code: 'USD',
+                currency_code: 'NGN',
                 value: req.body.amount  // Get ride fare from request
             }
         }]
