@@ -38,7 +38,7 @@ app.use('/payment', paymentRoutes); // Payment API routes
 app.use('/ride', reviewRoutes); // Review API routes
 
 // Import Socket.IO initialization
-const socketConnect = require('./sockets/socketConnection');
+// const socketConnect = require('./sockets/socketConnection');
 
 // Initialize Socket.IO
 socketConnect.init(server);
