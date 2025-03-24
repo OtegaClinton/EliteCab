@@ -70,6 +70,9 @@ app.use((err, req, res, next) => {
     next();
 });
 
+app.get('/', (req, res) => {
+    res.send('🚀 EliteCab API is up and running!');
+});
 
 server.listen(PORT, () => {
     console.log(`🚀 Server is listening on PORT: ${PORT}`);
