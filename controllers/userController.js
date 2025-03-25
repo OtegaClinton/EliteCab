@@ -220,7 +220,7 @@ exports.signUp = async (req, res) => {
       await findUser.save();
   
       // Redirect URL after successful verification
-      const redirectUrl = "https://elite-cab.vercel.app/#/Login";
+      const redirectUrl = "https://elitecab.onrender.com";
       const successPage = `
       <!DOCTYPE html>
       <html lang="en">
