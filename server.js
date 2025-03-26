@@ -59,7 +59,7 @@ app.post("/api/paypal/create-payment", async (req, res) => {
     purchase_units: [
       {
         amount: {
-          currency_code: currency || "NGN",
+          currency_code: currency || "USD",
           value: amount,
         },
       },
