@@ -1,5 +1,6 @@
 const Ride = require("../models/rideModel");
 const { getRoute } = require("../utils/osmHelper"); 
+const socketIO = require('../sockets/socketConnection');
 
 // Create a ride (Driver only, with OSM Helper)
 exports.createRide = async (req, res) => {
@@ -120,30 +121,6 @@ exports.getRideRequests = async (req, res) => {
     }
 };
 
-// Accept or reject a passenger request
-exports.handleRideRequest = async (req, res) => {
-    try {
-        const { status } = req.body; // Accept or Reject
-        const ride = await Ride.findById(req.params.id);
-        
-        if (!ride) return res.status(404).json({ error: "Ride not found" });
-        
-        const passengerIndex = ride.passengers.findIndex(p => p.user.toString() === req.params.requestId);
-        if (passengerIndex === -1) return res.status(404).json({ error: "Passenger request not found" });
-        
-        if (status === "accepted") {
-            ride.passengers[passengerIndex].status = "accepted";
-        } else {
-            ride.passengers.splice(passengerIndex, 1); // Remove rejected request
-        }
-        await ride.save();
-        res.status(200).json({ message: `Passenger request ${status}`, ride });
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ error: "Error handling ride request" });
-    }
-};
-
 // Passengers find available rides
 exports.getAvailableRides = async (req, res) => {
     try {
@@ -172,31 +149,6 @@ exports.getAvailableRides = async (req, res) => {
     }
 };
 
-
-// Passengers join a ride
-exports.joinRide = async (req, res) => {
-    try {
-        const ride = await Ride.findById(req.params.id);
-
-        if (!ride) return res.status(404).json({ error: "Ride not found" });
-
-        if (ride.availableSeats <= 0) return res.status(400).json({ error: "No available seats" });
-
-        // Check if passenger is already in the ride request list
-        if (ride.passengers.includes(req.user.id)) {
-            return res.status(400).json({ error: "You have already requested to join this ride" });
-        }
-
-        // Add passenger to the ride request list (pending status)
-        ride.passengers.push({ user: req.user.id, status: "pending" });
-        await ride.save();
-
-        res.status(200).json({ message: "Ride request sent successfully", ride });
-    } catch (error) {
-        res.status(500).json({ error: "Error joining ride" });
-    }
-};
-
 // Users see their ride history
 exports.getRideHistory = async (req, res) => {
     try {
@@ -213,5 +165,108 @@ exports.getRideHistory = async (req, res) => {
         res.status(200).json(rideHistory);
     } catch (error) {
         res.status(500).json({ error: "Error fetching ride history" });
+    }
+};
+
+exports.joinRide = async (req, res) => {
+    try {
+        const ride = await Ride.findById(req.params.id);
+        if (!ride) return res.status(404).json({ error: "Ride not found" });
+
+        if (ride.availableSeats < 1) {
+            return res.status(400).json({ error: "No more available seats" });
+        }
+
+        // Check if passenger already exists in any status
+        const existingPassenger = ride.passengers.find(p => 
+            p.user.toString() === req.user.id.toString()
+        );
+
+        if (existingPassenger) {
+            return res.status(400).json({ 
+                error: "You have already requested to join this ride",
+                currentStatus: existingPassenger.status
+            });
+        }
+
+        // Add properly structured passenger
+        ride.passengers.push({
+            user: req.user.id,
+            status: "pending",
+            pickupLocation: req.body.pickupLocation || ride.from, // Add if needed
+            requestedAt: new Date()
+        });
+
+        await ride.save();
+        res.status(200).json({ message: "Ride request sent successfully", ride });
+    } catch (error) {
+        res.status(500).json({ error: "Error joining ride" });
+    }
+};
+
+exports.handleRideRequest = async (req, res) => {
+    try {
+        const { status } = req.body;
+        const ride = await Ride.findById(req.params.id)
+            .populate('passengers.user', 'name email phone'); // Populate passenger info
+
+        if (!ride) {
+            return res.status(404).json({ error: "Ride not found" });
+        }
+
+        // Find the passenger request using either _id or user id
+        const passengerRequest = ride.passengers.find(p => 
+            p._id.toString() === req.params.requestId || 
+            p.user._id.toString() === req.params.requestId
+        );
+
+        if (!passengerRequest) {
+            return res.status(404).json({ error: "Passenger request not found" });
+        }
+
+        if (status === "accepted") {
+            if (ride.availableSeats < 1) {
+                return res.status(400).json({ error: "No more available seats" });
+            }
+            
+            passengerRequest.status = "accepted";
+            passengerRequest.approvedAt = new Date();
+            ride.availableSeats -= 1;
+            
+            // Notify passenger via WebSocket
+            socketIO.getIO().to(`user_${passengerRequest.user._id}`).emit('rideRequestAccepted', {
+                rideId: ride._id,
+                driverId: ride.driver,
+                status: 'accepted'
+            });
+        } else if (status === "rejected") {
+            passengerRequest.status = "rejected";
+            // Optionally remove from array if you want to clean up
+            // ride.passengers = ride.passengers.filter(p => p._id.toString() !== req.params.requestId);
+        } else {
+            return res.status(400).json({ error: "Invalid status" });
+        }
+
+        await ride.save();
+
+        res.status(200).json({ 
+            message: `Passenger request ${status}`, 
+            ride: {
+                _id: ride._id,
+                availableSeats: ride.availableSeats,
+                passengers: ride.passengers.map(p => ({
+                    _id: p._id,
+                    user: p.user._id,
+                    status: p.status,
+                    approvedAt: p.approvedAt
+                }))
+            }
+        });
+    } catch (error) {
+        console.error("Error handling ride request:", error);
+        res.status(500).json({ 
+            error: "Error handling ride request",
+            details: error.message 
+        });
     }
 };
