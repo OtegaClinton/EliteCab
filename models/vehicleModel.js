@@ -25,7 +25,7 @@ const vehicleSchema = new mongoose.Schema({
     },
     vehicleImage: { 
         pictureId: { type: String, default: "" }, 
-        pictureUrl: { type: String, default: "" } 
+        pictureUrl: { type: String, default: "" }, 
       }, 
     createdAt: {
         type: Date,
