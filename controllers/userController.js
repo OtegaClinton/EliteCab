@@ -2,6 +2,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const mongoose = require("mongoose");
 const userModel = require("../models/userModel");
+const BlacklistedTokenModel = require('../models/blacklistModel'); 
 const sendMail = require("../helpers/email");
 const cloudinary = require("../helpers/cloudinary");
 const fs = require("fs");
@@ -170,101 +171,139 @@ exports.signUp = async (req, res) => {
 
   
 
-
   exports.verifyEmail = async (req, res) => {
     try {
-      const { id, token } = req.params;
-  
-      // Find the user by ID
-      const findUser = await userModel.findById(id);
-      if (!findUser) {
-        return res.status(404).json({ message: "User not found." });
-      }
-  
-      // If already verified, notify user
-      if (findUser.isVerified) {
-        return res.status(200).json({ message: "Your account has already been verified." });
-      }
-  
-      // Verify the token
-      try {
-        jwt.verify(token, process.env.JWT_SECRET);
-      } catch (error) {
-        // If token is expired, send a new verification email
-        const newToken = jwt.sign({ id: findUser._id, email: findUser.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
-        const verifyLink = `${req.protocol}://${req.get("host")}/api/v1/verify/${findUser._id}/${newToken}`;
-  
-        await sendMail({
-          subject: "Verify Your Elite Cab Account",
-          to: findUser.email,
-          html: `
-            <div style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
-              <h2 style="color: #007bff;">🚖 Hello, ${findUser.firstName}! 🚖</h2>
-              <p>Oops! Your previous verification link has expired. But don’t worry, we've got a new one just for you!</p>
-              <p>Click the button below to verify your email and start enjoying Elite Cab services.</p>
-              <a href="${verifyLink}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 8px; display: inline-block;">
-                ✅ Verify My Email
-              </a>
-              <p>If you did not sign up for Elite Cab, you can ignore this email.</p>
+        const { id, token } = req.params;
+
+        // Find the user by ID
+        const findUser = await userModel.findById(id);
+        if (!findUser) {
+            return res.status(404).json({ message: "User not found." });
+        }
+
+        // If already verified, show an HTML message before redirecting
+        if (findUser.isVerified) {
+            const redirectUrl = "https://elitecab.onrender.com";
+            const alreadyVerifiedPage = `
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Email Already Verified</title>
+                <style>
+                    body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; text-align: center; padding: 50px; }
+                    .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); display: inline-block; }
+                    h2 { color: #007bff; }
+                    p { font-size: 16px; color: #333; }
+                    a { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 8px; margin-top: 20px; font-size: 16px; }
+                </style>
+            </head>
+            <body>
+                <div class="container">
+                    <h2>✅ Your email is already verified!</h2>
+                    <p>You will be redirected to the login page in <span id="countdown">5</span> seconds.</p>
+                    <a href="${redirectUrl}">Go to Login 🚗</a>
+                </div>
+
+                <script>
+                    let countdown = 5;
+                    const countdownElement = document.getElementById('countdown');
+                    setInterval(() => {
+                        if (countdown > 0) {
+                            countdown--;
+                            countdownElement.textContent = countdown;
+                        } else {
+                            window.location.href = "${redirectUrl}";
+                        }
+                    }, 1000);
+                </script>
+            </body>
+            </html>`;
+
+            return res.status(200).send(alreadyVerifiedPage);
+        }
+
+        // Verify the token
+        try {
+            jwt.verify(token, process.env.JWT_SECRET);
+        } catch (error) {
+            // If token is expired, send a new verification email
+            const newToken = jwt.sign({ id: findUser._id, email: findUser.email }, process.env.JWT_SECRET, { expiresIn: '24h' });
+            const verifyLink = `${req.protocol}://${req.get("host")}/api/v1/verify/${findUser._id}/${newToken}`;
+
+            await sendMail({
+                subject: "Verify Your Elite Cab Account",
+                to: findUser.email,
+                html: `
+                    <div style="text-align: center; padding: 20px; font-family: Arial, sans-serif;">
+                        <h2 style="color: #007bff;">🚖 Hello, ${findUser.firstName}! 🚖</h2>
+                        <p>Oops! Your previous verification link has expired. But don’t worry, we've got a new one just for you!</p>
+                        <p>Click the button below to verify your email and start enjoying Elite Cab services.</p>
+                        <a href="${verifyLink}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; font-size: 16px; font-weight: bold; border-radius: 8px; display: inline-block;">
+                            ✅ Verify My Email
+                        </a>
+                        <p>If you did not sign up for Elite Cab, you can ignore this email.</p>
+                    </div>
+                `,
+            });
+
+            return res.status(400).json({
+                message: "This link has expired. A new verification link has been sent to your email.",
+            });
+        }
+
+        // Mark user as verified
+        findUser.isVerified = true;
+        await findUser.save();
+
+        // Redirect URL after successful verification
+        const redirectUrl = "https://elitecab.onrender.com";
+        const successPage = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Email Verified - Elite Cab</title>
+            <style>
+                body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; text-align: center; padding: 50px; }
+                .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); display: inline-block; }
+                h2 { color: #007bff; }
+                p { font-size: 16px; color: #333; }
+                a { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 8px; margin-top: 20px; font-size: 16px; }
+            </style>
+        </head>
+        <body>
+            <div class="container">
+                <h2>🎉 Welcome to Elite Cab, ${findUser.firstName}! 🚖</h2>
+                <p>Your email has been verified! You’re now ready to book and offer rides.</p>
+                <p>You will be redirected to the login page in <span id="countdown">10</span> seconds.</p>
+                <a href="${redirectUrl}">Go to Login 🚗</a>
             </div>
-          `,
-        });
-  
-        return res.status(400).json({
-          message: "This link has expired. A new verification link has been sent to your email.",
-        });
-      }
-  
-      // Mark user as verified
-      findUser.isVerified = true;
-      await findUser.save();
-  
-      // Redirect URL after successful verification
-      const redirectUrl = "https://elite-cab.vercel.app/#/Login";
-      const successPage = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Email Verified - Elite Cab</title>
-          <style>
-              body { font-family: 'Arial', sans-serif; background-color: #f4f4f4; text-align: center; padding: 50px; }
-              .container { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); display: inline-block; }
-              h2 { color: #007bff; }
-              p { font-size: 16px; color: #333; }
-              a { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 8px; margin-top: 20px; font-size: 16px; }
-          </style>
-      </head>
-      <body>
-          <div class="container">
-              <h2>🎉 Welcome to Elite Cab, ${findUser.firstName}! 🚖</h2>
-              <p>Your email has been verified! You’re now ready to book and offer rides.</p>
-              <p>You will be redirected to the login page in <span id="countdown">10</span> seconds.</p>
-              <a href="${redirectUrl}">Go to Login 🚗</a>
-          </div>
-  
-          <script>
-              let countdown = 10;
-              const countdownElement = document.getElementById('countdown');
-              setInterval(() => {
-                  if (countdown > 0) {
-                      countdown--;
-                      countdownElement.textContent = countdown;
-                  } else {
-                      window.location.href = "${redirectUrl}";
-                  }
-              }, 1000);
-          </script>
-      </body>
-      </html>`;
-  
-      res.status(200).send(successPage);
+
+            <script>
+                let countdown = 10;
+                const countdownElement = document.getElementById('countdown');
+                setInterval(() => {
+                    if (countdown > 0) {
+                        countdown--;
+                        countdownElement.textContent = countdown;
+                    } else {
+                        window.location.href = "${redirectUrl}";
+                    }
+                }, 1000);
+            </script>
+        </body>
+        </html>`;
+
+        res.status(200).send(successPage);
     } catch (error) {
-      console.error("Error during email verification:", error);
-      return res.status(500).json({ message: "An error occurred during verification." });
+        console.error("Error during email verification:", error);
+        return res.status(500).json({ message: "An error occurred during verification." });
     }
-  };
+};
+
 
   
   exports.newEmail = async (req, res) => {
@@ -669,3 +708,42 @@ exports.updateProfilePicture = async (req, res) => {
       return res.status(500).json({ message: "An error occurred while updating the profile picture." });
   }
 };
+
+exports.logOut = async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ message: "Unauthorized. No token provided." });
+    }
+
+    const token = authHeader.split(" ")[1];
+
+    if (!token) {
+      return res.status(400).json({ message: "No token provided." });
+    }
+
+    // Check if token is already blacklisted
+    const existingToken = await BlacklistedTokenModel.findOne({ token });
+
+    if (!existingToken) {
+      await BlacklistedTokenModel.create({ token, createdAt: new Date() });
+    }
+
+    return res.status(200).json({ message: "Logout successful." });
+
+  } catch (error) {
+    console.error("Error during logout:", error);
+
+    // Handle duplicate key error
+    if (error.code === 11000) {
+      return res.status(200).json({ message: "Logout successful." });
+    }
+
+    return res.status(500).json({
+      message: "An error occurred during logout. Please try again later.",
+      error: error.message,
+    });
+  }
+};
+
+

@@ -16,9 +16,9 @@ exports.authenticator = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // Attach user data to request object
-    req.user = decoded; // Now accessible in controllers
+    req.user = decoded; 
 
-    next(); // Proceed to the next middleware/controller
+    next(); 
 
   } catch (error) {
     if (error.name === "TokenExpiredError") {

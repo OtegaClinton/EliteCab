@@ -23,12 +23,25 @@ const RideSchema = new mongoose.Schema(
     availableSeats: { 
       type: Number, 
       required: true, 
-      min: 1 
+      min: 0
     },
 
-    passengers: [{ 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User" 
+    // passengers: [{ 
+    //   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    //   status: { type: String, enum: ['pending', 'approved'], default: 'pending' }
+    // }],
+
+    passengers: [{
+        user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+        status: { 
+            type: String, 
+            enum: ['pending', 'accepted', 'rejected'],
+            default: 'pending'
+        },
+        requestedAt: { type: Date, default: Date.now },
+        approvedAt: Date, // Track when request was approved
+        pickupLocation: {type: String, trim: true},
+        dropoffLocation: {type: String, trim: true}
     }],
 
     status: { 
