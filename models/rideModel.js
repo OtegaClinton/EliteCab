@@ -48,7 +48,15 @@ const RideSchema = new mongoose.Schema(
       type: String, 
       enum: ["open", "full", "completed"], 
       default: "open" 
-    }
+    },
+    distance: {
+      type: Number,
+      required: true
+  },
+    duration: {
+      type: Number,
+      required: true
+  }, 
   }, 
   { timestamps: true }
 );
