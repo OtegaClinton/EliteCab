@@ -8,6 +8,25 @@ const RideSchema = new mongoose.Schema(
       required: true 
     },
 
+    pricePerSeat: { 
+      type: Number, 
+      required: true 
+    },
+
+    maxPassengers: { 
+      type: Number, 
+      required: true
+     },
+
+  currentPassengers: {
+     type: Number, default: 0
+     },
+
+  passengers: [{ 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: 'User'
+   }],
+
     from: { 
       type: String, 
       required: true, 
@@ -26,19 +45,16 @@ const RideSchema = new mongoose.Schema(
       min: 1 
     },
 
-    passengers: [{ 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: "User" 
-    }],
-
     status: { 
       type: String, 
       enum: ["open", "full", "completed"], 
-      default: "open" 
-    }
+      default: "open",
+    },
   }, 
   { timestamps: true }
 );
+
+
 
 const rideModel = mongoose.model("Ride", RideSchema);
 
