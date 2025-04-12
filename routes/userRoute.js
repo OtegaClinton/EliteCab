@@ -13,7 +13,8 @@ const {
     updateUser,
     deleteUser,
     makeAdmin,
-    updateProfilePicture
+    updateProfilePicture,
+    logOut
    
  } = require("../controllers/userController");
 
@@ -53,6 +54,9 @@ router.put("/users/:id/make-admin", authenticator, authorization, makeAdmin);
 
 // Route to update user profile picture
 router.put('/profile-picture/:id', authenticator, uploader.single("profilePicture"), updateProfilePicture);
+
+// Route to logout
+router.post('/logout', logOut);
 
 
 // password 
