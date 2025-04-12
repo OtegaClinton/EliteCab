@@ -23,8 +23,12 @@ exports.initializePassengerPayment = async (req, res) => {
         }
       }
     );
+    console.log(response.data); // <- this logs the API response
+    res.status(200).json(response.data);// <<- this sends the response 
 
-    res.json({ authorization_url: response.data.data.authorization_url });
+    res.json({ authorization_url: response.data.data.authorization_url }
+
+    );
   } catch (err) {
     console.error(err.response?.data || err.message);
     res.status(500).json({ error: 'Payment initialization failed' });
