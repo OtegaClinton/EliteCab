@@ -1,19 +1,50 @@
 const express = require('express');
-const liveRideTrackingController = require('../controllers/liveRideTrackingController');
+const {
+    checkRole,
+    startRide,
+    updateLocation,
+    endRide,
+    endRideForPassenger,
+    getRideStatus
+} = require('../controllers/liveRideTrackingController');
 const { authenticator } = require('../middlewares/authentication');
+const { 
+    validateRideExists,
+    validateDriverOwnership,
+    validatePassengerAccess,
+    validateCoordinates
+} = require('../middlewares/rideValidation');
 
 const router = express.Router();
 
-// Protect all routes with authentication middleware
+// Protect all routes with authentication
 router.use(authenticator);
 
-// Start a ride
-router.post('/start', liveRideTrackingController.startRide);
+// Start ride (Driver only)
+router.post('/start', checkRole, validateRideExists, validateDriverOwnership, startRide);
 
-// Update location (real-time)
-router.post('/update-location', liveRideTrackingController.updateLocation);
+// Location updates (Driver only)
+router.post(
+    '/:rideId/location',
+    validateRideExists,
+    validateDriverOwnership,
+    validateCoordinates,
+    updateLocation
+);
 
-// End a ride
-router.post('/end', liveRideTrackingController.endRide);
+// End ride for specific passenger (Driver or passenger themselves)
+router.post(
+    '/:rideId/passengers/:passengerId/end',
+    checkRole, 
+    validateRideExists,
+    validatePassengerAccess,
+    endRideForPassenger
+);
+
+// End entire ride (Driver only)
+router.post('/end', checkRole, validateRideExists, validateDriverOwnership, endRide);
+
+// Get ride status (Driver or passenger)
+router.get('/:rideId/status', validateRideExists, validatePassengerAccess, getRideStatus);
 
 module.exports = router;
