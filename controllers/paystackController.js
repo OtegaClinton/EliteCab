@@ -1,5 +1,6 @@
 const axios = require('axios');
 const Ride = require('../models/rideModel');
+require('dotenv').config()
 
 const PAYSTACK_SECRET = process.env.PAYSTACK_SECRET_KEY;
 

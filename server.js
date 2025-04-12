@@ -1,5 +1,5 @@
-require('./controllers/paystackController');
 require("dotenv").config();
+require('./controllers/paystackController');
 const express = require("express");
 const axios = require('axios');
 const multer = require("multer");
@@ -9,7 +9,7 @@ const userRoutes = require("./routes/userRoute");
 const chatRoutes = require("./routes/chatRoute");
 const rideRoutes = require("./routes/rideRoute"); 
 const reviewRoutes = require('./routes/reviewRoutes');
-const paystackRoutes = require('./routes/paystackRoute');
+const paystackRoutes = require('./routes/paystackRoutes');
 
 
 const http = require('http');
