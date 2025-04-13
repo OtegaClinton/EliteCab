@@ -2,31 +2,43 @@ const Ride = require("../models/rideModel");
 const { getRoute } = require("../utils/osmHelper"); 
 const socketIO = require('../sockets/socketConnection');
 
+
 // Create a ride (Driver only, with OSM Helper)
 exports.createRide = async (req, res) => {
     try {
-        const { from, to, availableSeats } = req.body;
+     const { from, to, availableSeats } = req.body;
         const driverId = req.user.id;
-
+    
         // Fetch route details using OSM
-        const routeDetails = await getRoute(from, to);
-        console.log(from, to)
-        // Create a new ride
-        const newRide = new Ride({
-            driver: driverId,
-            from,
-            to,
-            availableSeats,
-            passengers: [],
-            distance: routeDetails.distance,
-            duration: routeDetails.duration
-        });
+            const routeDetails = await getRoute(from, to);
 
-        await newRide.save();
-        res.status(201).json({ message: "Ride created successfully", ride: newRide });
+         // Convert distance to kilometers (as a number)
+         const distanceKm = (routeDetails.distance / 1000).toFixed(2); // 2 decimal places
+       
+         // Convert duration to total minutes (as a number)
+         const durationInMinutes = Math.floor(routeDetails.duration / 60); // Convert seconds to minutes
+ 
+         // Create a new ride
+         const newRide = new Ride({
+             driver: driverId,
+             from,
+             to,
+             availableSeats,
+             passengers: [],
+             distance: parseFloat(distanceKm), // Ensure it's stored as a number
+             duration: durationInMinutes, // Store duration in minutes as a number
+         });
+         await newRide.save();
+         res.status(201).json({ 
+            message: "Ride created successfully", 
+            ride: {
+                ...newRide.toObject(), 
+                formattedDuration: `${Math.floor(durationInMinutes / 60)}h ${durationInMinutes % 60}m`
+            }
+        })  
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: "Error creating ride" });
+    console.error("Error creating ride:", error);
+    res.status(500).json({ error: "Error creating ride" });
     }
 };
 

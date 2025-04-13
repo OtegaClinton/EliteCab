@@ -1,4 +1,4 @@
-{
+{ "$schema":"https://json.schemastore.org/package",
   "name": "elitecab",
   "version": "1.0.0",
   "main": "server.js",
@@ -11,7 +11,6 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@paypal/checkout-server-sdk": "^1.0.3",
     "axios": "^1.8.4",
     "bcrypt": "^5.1.1",
     "bcryptjs": "^3.0.2",

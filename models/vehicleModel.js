@@ -23,6 +23,10 @@ const vehicleSchema = new mongoose.Schema({
         required: true,
         unique: true
     },
+    vehicleImage: { 
+        pictureId: { type: String, default: "" }, 
+        pictureUrl: { type: String, default: "" }, 
+      }, 
     createdAt: {
         type: Date,
         default: Date.now
