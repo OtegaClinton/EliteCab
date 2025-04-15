@@ -8,25 +8,6 @@ const RideSchema = new mongoose.Schema(
       required: true 
     },
 
-    pricePerSeat: { 
-      type: Number, 
-      required: true 
-    },
-
-    maxPassengers: { 
-      type: Number, 
-      required: true
-     },
-
-  currentPassengers: {
-     type: Number, default: 0
-     },
-
-  passengers: [{ 
-    type: mongoose.Schema.Types.ObjectId, 
-    ref: 'User'
-   }],
-
     from: { 
       type: String, 
       required: true, 
@@ -45,11 +26,6 @@ const RideSchema = new mongoose.Schema(
       min: 0
     },
 
-    status: { 
-      type: String, 
-      enum: ["open", "full", "completed"], 
-      default: "open",
-    },
     // passengers: [{ 
     //   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     //   status: { type: String, enum: ['pending', 'approved'], default: 'pending' }
@@ -84,8 +60,6 @@ const RideSchema = new mongoose.Schema(
   }, 
   { timestamps: true }
 );
-
-
 
 const rideModel = mongoose.model("Ride", RideSchema);
 

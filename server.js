@@ -40,6 +40,7 @@ app.use('/api/live-ride-tracking', limiter, liveRideTrackingRoutes);
 app.use('/ride', reviewRoutes); // Review API routes
 app.use('/api/paystack', paystackRoutes);
 app.use('/api/v1', payRideRoutes); 
+app.use('/api/paypal', paymentRoutes);
 
 // Initialize Socket.IO
 socketConnect.init(server);
