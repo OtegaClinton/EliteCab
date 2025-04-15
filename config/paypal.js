@@ -8,6 +8,3 @@ const environment = new paypal.core.SandboxEnvironment(
 const client = new paypal.core.PayPalHttpClient(environment);
 
 module.exports = client;
-
-const paypalClient = new paypal.core.PayPalHttpClient(environment);
-module.exports = paypalClient;
