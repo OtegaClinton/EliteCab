@@ -134,7 +134,9 @@ exports.createOrder = async (req, res) => {
 
   try {
     const order = await paypalClient.execute(request);
-    res.status(200).json({ orderId: order.result.id });
+    res.status(200).json({ 
+      orderId: order.result.id
+     });
   } catch (error) {
     console.error('Create order error:', error);
     res.status(500).json({ error: 'Failed to create order' });

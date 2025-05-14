@@ -8,7 +8,7 @@ require("./config/db");
 const userRoutes = require("./routes/userRoute");
 const chatRoutes = require("./routes/chatRoute");
 const rideRoutes = require("./routes/rideRoute"); 
-const paymentRoutes = require('./routes/paymentRoutes');
+const paypalRoutes = require('./routes/paypalRoutes');
 const payRideRoutes = require('./routes/payRideRoute');
 
 const reviewRoutes = require('./routes/reviewRoutes');
@@ -40,7 +40,7 @@ app.use('/api/live-ride-tracking', limiter, liveRideTrackingRoutes);
 app.use('/ride', reviewRoutes); // Review API routes
 app.use('/api/paystack', paystackRoutes);
 app.use('/api/v1', payRideRoutes); 
-app.use('/api/paypal', paymentRoutes);
+app.use('/api/paypal', paypalRoutes);
 
 // Initialize Socket.IO
 socketConnect.init(server);
