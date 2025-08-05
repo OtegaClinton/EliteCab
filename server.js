@@ -1,5 +1,5 @@
-require('./controllers/paymentController');
 require("dotenv").config();
+require('./controllers/paystackController');
 const express = require("express");
 const axios = require('axios');
 const multer = require("multer");
@@ -10,7 +10,9 @@ const chatRoutes = require("./routes/chatRoute");
 const rideRoutes = require("./routes/rideRoute"); 
 const paymentRoutes = require('./routes/paymentRoutes');
 const payRideRoutes = require('./routes/payRideRoute');
+
 const reviewRoutes = require('./routes/reviewRoutes');
+const paystackRoutes = require('./routes/paystackRoutes');
 
 
 const http = require('http');
@@ -35,13 +37,15 @@ app.use(express.json());
 
 app.use("/api/v1", userRoutes, chatRoutes, rideRoutes);
 app.use('/api/live-ride-tracking', limiter, liveRideTrackingRoutes);
-app.use('/payment', paymentRoutes); // Payment API routes
 app.use('/ride', reviewRoutes); // Review API routes
+app.use('/api/paystack', paystackRoutes);
 app.use('/api/v1', payRideRoutes); 
-
+app.use('/api/paypal', paymentRoutes);
 
 // Initialize Socket.IO
 socketConnect.init(server);
+
+
 
 // Error handling middleware
 app.use((err, req, res, next) => {
