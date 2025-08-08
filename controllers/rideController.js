@@ -4,43 +4,105 @@ const socketIO = require('../sockets/socketConnection');
 
 
 // Create a ride (Driver only, with OSM Helper)
+// exports.createRide = async (req, res) => {
+//     try {
+//      const { from, to, availableSeats } = req.body;
+//         const driverId = req.user.id;
+    
+//         // Fetch route details using OSM
+//             const routeDetails = await getRoute(from, to);
+
+//          // Convert distance to kilometers (as a number)
+//          const distanceKm = (routeDetails.distance / 1000).toFixed(2); // 2 decimal places
+       
+//          // Convert duration to total minutes (as a number)
+//          const durationInMinutes = Math.floor(routeDetails.duration / 60); // Convert seconds to minutes
+ 
+//          // Create a new ride
+//          const newRide = new Ride({
+//              driver: driverId,
+//              from,
+//              to,
+//              availableSeats,
+//              passengers: [],
+//              distance: parseFloat(distanceKm), // Ensure it's stored as a number
+//              duration: durationInMinutes, // Store duration in minutes as a number
+//          });
+//          await newRide.save();
+//          res.status(201).json({ 
+//             message: "Ride created successfully", 
+//             ride: {
+//                 ...newRide.toObject(), 
+//                 formattedDuration: `${Math.floor(durationInMinutes / 60)}h ${durationInMinutes % 60}m`
+//             }
+//         })  
+//     } catch (error) {
+//     console.error("Error creating ride:", error);
+//     res.status(500).json({ error: "Error creating ride" });
+//     }
+// };
+
 exports.createRide = async (req, res) => {
     try {
-     const { from, to, availableSeats } = req.body;
+        const { from, to, availableSeats } = req.body;
         const driverId = req.user.id;
-    
-        // Fetch route details using OSM
-            const routeDetails = await getRoute(from, to);
 
-         // Convert distance to kilometers (as a number)
-         const distanceKm = (routeDetails.distance / 1000).toFixed(2); // 2 decimal places
-       
-         // Convert duration to total minutes (as a number)
-         const durationInMinutes = Math.floor(routeDetails.duration / 60); // Convert seconds to minutes
- 
-         // Create a new ride
-         const newRide = new Ride({
-             driver: driverId,
-             from,
-             to,
-             availableSeats,
-             passengers: [],
-             distance: parseFloat(distanceKm), // Ensure it's stored as a number
-             duration: durationInMinutes, // Store duration in minutes as a number
-         });
-         await newRide.save();
-         res.status(201).json({ 
-            message: "Ride created successfully", 
+        // 1. Basic validation
+        if (!from || !to || !availableSeats) {
+            return res.status(400).json({
+                error: "Please provide 'from', 'to', and 'availableSeats'"
+            });
+        }
+
+        // 2. Fetch route details from OSM
+        const routeDetails = await getRoute(from, to);
+
+        if (!routeDetails || !routeDetails.distance || !routeDetails.duration) {
+            return res.status(400).json({
+                error: "Unable to fetch valid route details"
+            });
+        }
+
+        // 3. Convert distance to kilometers (numeric with 2 decimal places)
+        const distanceKm = Math.round((routeDetails.distance / 1000) * 100) / 100;
+
+        // 4. Convert duration to total minutes
+        const durationInMinutes = Math.floor(routeDetails.duration / 60);
+
+        // 5. Create and save new ride
+        const newRide = new Ride({
+            driver: driverId,
+            from,
+            to,
+            availableSeats,
+            passengers: [],
+            distance: distanceKm,
+            duration: durationInMinutes
+        });
+
+        await newRide.save();
+
+        // 6. Response
+        res.status(201).json({
+            message: "Ride created successfully",
             ride: {
-                ...newRide.toObject(), 
+                id: newRide._id,
+                driver: newRide.driver,
+                from: newRide.from,
+                to: newRide.to,
+                availableSeats: newRide.availableSeats,
+                distance: newRide.distance,
+                duration: newRide.duration,
                 formattedDuration: `${Math.floor(durationInMinutes / 60)}h ${durationInMinutes % 60}m`
             }
-        })  
+        });
+
     } catch (error) {
-    console.error("Error creating ride:", error);
-    res.status(500).json({ error: "Error creating ride" });
+        console.error("Error creating ride:", error);
+        res.status(500).json({ error: "Error creating ride" });
     }
 };
+
 
 exports.addReview = (req, res) => {
     try {
